@@ -69,3 +69,4 @@ venv.bak/
 # CodeDrift local reports
 *.sarif
 drift_report.json
+*.html

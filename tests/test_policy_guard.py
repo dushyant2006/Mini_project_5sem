@@ -41,3 +41,14 @@ def test_guard_passes_when_blast_radius_is_zero():
     assert res.decision == GateDecision.PASSED
     assert res.exit_code == 0
     assert len(res.violations) == 0
+
+
+def test_html_report_rendering():
+    from codedrift.guard.reporter import DriftReporter
+    diff = DiffResult(changes=[APIChange("FN_REM", "lib.foo", is_breaking=True, severity="CRITICAL")])
+    reporter = DriftReporter()
+    html = reporter.to_html(diff)
+    assert "<!DOCTYPE html>" in html
+    assert "CodeDrift Dependency Guard Report" in html
+    assert "lib.foo" in html
+

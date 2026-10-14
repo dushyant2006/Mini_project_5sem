@@ -56,12 +56,12 @@ def audit_command(args: argparse.Namespace) -> int:
     console.print(f"Bump: [yellow]{args.old_version}[/yellow] -> [yellow]{args.new_version}[/yellow] ({audit_res['bump_type']})")
     
     if audit_res["valid"]:
-        console.print("[bold green]✔ Version bump satisfies SemVer specification.[/bold green]")
+        console.print("[bold green][PASS] Version bump satisfies SemVer specification.[/bold green]")
         return 0
     else:
-        console.print("[bold red]✘ SemVer Violation Detected![/bold red]")
+        console.print("[bold red][FAIL] SemVer Violation Detected![/bold red]")
         for v in audit_res["violations"]:
-            console.print(f"  • [red]{v}[/red]")
+            console.print(f"  * [red]{v}[/red]")
         return 1
 
 
@@ -194,7 +194,54 @@ def build_parser() -> argparse.ArgumentParser:
     p_remed.add_argument("--package", help="Optional library package name")
     p_remed.set_defaults(func=remediate_command)
 
+    # report
+    p_rep = sub.add_parser("report", help="Generate standalone interactive HTML report")
+    p_rep.add_argument("old_file", help="Path to base library file")
+    p_rep.add_argument("new_file", help="Path to new library file")
+    p_rep.add_argument("--client", help="Path to client directory to analyze")
+    p_rep.add_argument("--package", help="Optional library package name")
+    p_rep.add_argument("--max-score", type=float, default=0.0, help="Max allowable blast score (default 0.0)")
+    p_rep.add_argument("-o", "--output", default="codedrift_report.html", help="Output HTML file path (default: codedrift_report.html)")
+    p_rep.set_defaults(func=report_command)
+
+    # ui
+    p_ui = sub.add_parser("ui", help="Launch interactive Streamlit Web Dashboard")
+    p_ui.set_defaults(func=ui_command)
+
     return root
+
+
+def report_command(args: argparse.Namespace) -> int:
+    parser = PythonParser()
+    old_info = parser.parse_file(args.old_file)
+    new_info = parser.parse_file(args.new_file)
+
+    engine = DiffEngine()
+    diff_result = engine.compare(old_info, new_info)
+
+    report = None
+    if args.client:
+        analyzer = BlastRadiusAnalyzer()
+        report = analyzer.analyze(diff_result, client_dir=args.client, target_package_name=args.package)
+
+    policy = GuardPolicy(max_allowable_blast_radius=args.max_score)
+    policy_engine = PolicyEngine(policy)
+    policy_result = policy_engine.evaluate(diff_result, blast_report=report)
+
+    reporter = DriftReporter(console)
+    html_content = reporter.to_html(diff_result, blast_report=report, policy_result=policy_result)
+
+    output_path = Path(args.output)
+    output_path.write_text(html_content, encoding="utf-8")
+    console.print(f"[bold green][OK] Standalone Interactive HTML Report generated at: [cyan]{output_path.resolve()}[/cyan][/bold green]")
+    return 0
+
+
+def ui_command(args: argparse.Namespace) -> int:
+    import subprocess
+    dashboard_path = Path(__file__).parent / "dashboard.py"
+    console.print("[bold green]Starting CodeDrift Interactive Web Dashboard on Streamlit...[/bold green]")
+    return subprocess.call([sys.executable, "-m", "streamlit", "run", str(dashboard_path)])
 
 
 def main(argv: Optional[List[str]] = None) -> int:
