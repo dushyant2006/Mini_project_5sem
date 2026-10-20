@@ -70,3 +70,4 @@ venv.bak/
 *.sarif
 drift_report.json
 *.html
+!src/codedrift/web/index.html
