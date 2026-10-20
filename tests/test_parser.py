@@ -1,7 +1,8 @@
-"""
-Comprehensive Unit Tests for CodeDrift PythonParser AST Engine.
-"""
-import pytest
+try:
+    import pytest
+except ImportError:
+    pytest = None
+
 from codedrift.parser import PythonParser
 from codedrift.core.exceptions import ParsingError
 
@@ -62,5 +63,8 @@ class DatabaseClient:
 def test_syntax_error_handling():
     invalid_code = "def broken_syntax(:"
     parser = PythonParser()
-    with pytest.raises(ParsingError):
+    try:
         parser.parse_code(invalid_code)
+        assert False, "Should have raised ParsingError"
+    except ParsingError:
+        pass

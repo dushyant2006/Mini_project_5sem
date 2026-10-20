@@ -208,6 +208,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_ui = sub.add_parser("ui", help="Launch interactive Streamlit Web Dashboard")
     p_ui.set_defaults(func=ui_command)
 
+    # predict
+    p_pred = sub.add_parser("predict", help="Predict degradation probability and effort using ML engine")
+    p_pred.add_argument("old_file", help="Path to base library file")
+    p_pred.add_argument("new_file", help="Path to new library file")
+    p_pred.add_argument("--client", help="Path to client directory to analyze")
+    p_pred.set_defaults(func=predict_command)
+
+    # serve
+    p_srv = sub.add_parser("serve", help="Launch headless REST API server")
+    p_srv.add_argument("--port", type=int, default=8000, help="Port to listen on (default: 8000)")
+    p_srv.set_defaults(func=serve_command)
+
     return root
 
 
@@ -242,6 +254,51 @@ def ui_command(args: argparse.Namespace) -> int:
     dashboard_path = Path(__file__).parent / "dashboard.py"
     console.print("[bold green]Starting CodeDrift Interactive Web Dashboard on Streamlit...[/bold green]")
     return subprocess.call([sys.executable, "-m", "streamlit", "run", str(dashboard_path)])
+
+
+def predict_command(args: argparse.Namespace) -> int:
+    from .ml.predictor import DegradationPredictor
+    parser = PythonParser()
+    old_info = parser.parse_file(args.old_file)
+    new_info = parser.parse_file(args.new_file)
+
+    diff = DiffEngine().compare(old_info, new_info)
+    report = None
+    if args.client:
+        report = BlastRadiusAnalyzer().analyze(diff, client_dir=args.client)
+
+    predictor = DegradationPredictor()
+    pred = predictor.predict(diff, blast_report=report)
+
+    tier_color = {
+        "STABLE": "green",
+        "LOW_RISK": "bright_green",
+        "MODERATE_RISK": "yellow",
+        "SEVERE_REGRESSION": "red",
+    }.get(pred.risk_tier, "white")
+
+    console.print("\n[bold cyan]CodeDrift ML Degradation & Effort Prediction:[/bold cyan]")
+    console.print(f"Risk Tier: [{tier_color}][bold]{pred.risk_tier}[/bold][/{tier_color}]")
+    console.print(f"Degradation Probability: [bold]{pred.degradation_probability * 100:.1f}%[/bold]")
+    console.print(f"Estimated Developer Migration Effort: [bold yellow]{pred.estimated_remediation_hours} hours[/bold yellow]")
+    console.print(f"Model Confidence: [bold]{pred.confidence_score * 100:.0f}%[/bold]")
+    console.print("\n[bold]Key Risk Drivers:[/bold]")
+    for driver in pred.key_risk_drivers:
+        console.print(f"  * {driver}")
+    return 0
+
+
+def serve_command(args: argparse.Namespace) -> int:
+    from .api.server import run_api_server
+    server = run_api_server(port=args.port)
+    console.print(f"[bold green]CodeDrift REST API Service running at http://localhost:{args.port}[/bold green]")
+    console.print("[dim]Press Ctrl+C to terminate.[/dim]")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Shutting down API server...[/yellow]")
+        server.server_close()
+    return 0
 
 
 def main(argv: Optional[List[str]] = None) -> int:

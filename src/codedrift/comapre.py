@@ -3,8 +3,12 @@ Comparison script facade (retained for backward compatibility).
 For the modern CLI, use `python -m codedrift diff <old_file> <new_file>` or `codedrift diff`.
 """
 from typing import Dict, Any
-from .parser import PythonParser
-from .detection import DiffEngine
+try:
+    from .parser import PythonParser
+    from .detection import DiffEngine
+except ImportError:
+    from codedrift.parser import PythonParser
+    from codedrift.detection import DiffEngine
 
 
 def compare_versions(

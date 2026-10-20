@@ -1,13 +1,22 @@
 """
 Unit Tests for Codemod Patch Generator and Migration Guide.
 """
+import tempfile
 from pathlib import Path
 from codedrift.core.models import BlastRadiusReport, BlastRadiusItem, APIChange, CallSite
 from codedrift.remediation.patch_generator import PatchGenerator
 from codedrift.remediation.migration_guide import MigrationGuideSynthesizer
 
 
-def test_remediation_generates_diff_for_removed_parameter(tmp_path: Path):
+def test_remediation_generates_diff_for_removed_parameter(tmp_path: Path = None):
+    if tmp_path is None:
+        with tempfile.TemporaryDirectory() as td:
+            _run_remediation_test(Path(td))
+    else:
+        _run_remediation_test(tmp_path)
+
+
+def _run_remediation_test(tmp_path: Path):
     target_file = tmp_path / "checkout.py"
     target_file.write_text("process_payment(amount=100, currency='USD')\n", encoding="utf-8")
 

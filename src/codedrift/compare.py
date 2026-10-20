@@ -1,7 +1,10 @@
 """
 Comparison script facade with correct spelling.
 """
-from .comapre import compare_versions
+try:
+    from .comapre import compare_versions
+except ImportError:
+    from codedrift.comapre import compare_versions
 
 __all__ = ["compare_versions"]
 

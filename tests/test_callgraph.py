@@ -1,11 +1,20 @@
 """
 Unit Tests for Static CallGraph Builder and Symbol Resolution.
 """
+import tempfile
 from pathlib import Path
 from codedrift.impact.callgraph import CallGraphBuilder
 
 
-def test_callgraph_extracts_invocations_and_aliases(tmp_path: Path):
+def test_callgraph_extracts_invocations_and_aliases(tmp_path: Path = None):
+    if tmp_path is None:
+        with tempfile.TemporaryDirectory() as td:
+            _run_callgraph_test(Path(td))
+    else:
+        _run_callgraph_test(tmp_path)
+
+
+def _run_callgraph_test(tmp_path: Path):
     client_code = """
 import paymentlib as p
 from authlib import authenticate

@@ -1,12 +1,21 @@
 """
 Unit Tests for Reachability Filtering and Blast Radius Risk Scoring.
 """
+import tempfile
 from pathlib import Path
 from codedrift.impact.blast_radius import BlastRadiusAnalyzer
 from codedrift.core.models import DiffResult, APIChange
 
 
-def test_blast_radius_filters_unreachable_breaking_changes(tmp_path: Path):
+def test_blast_radius_filters_unreachable_breaking_changes(tmp_path: Path = None):
+    if tmp_path is None:
+        with tempfile.TemporaryDirectory() as td:
+            _run_blast_test(Path(td))
+    else:
+        _run_blast_test(tmp_path)
+
+
+def _run_blast_test(tmp_path: Path):
     # Client only calls process_payment, does NOT call delete_all_records
     client_code = """
 from paymentlib import process_payment

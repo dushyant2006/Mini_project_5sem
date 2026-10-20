@@ -1,0 +1,12 @@
+{
+  "model_type": "LogisticDegradationPredictor",
+  "version": "1.0.0",
+  "calibrated_dataset": "PyPI-Breaking-Changes-Corpus",
+  "bias": -2.2,
+  "w_breaking_ratio": 1.8,
+  "w_reachability_ratio": 2.5,
+  "w_critical_count": 0.9,
+  "w_blast_score": 0.04,
+  "w_affected_files": 0.35,
+  "confidence_baseline": 0.92
+}
