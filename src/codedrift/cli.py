@@ -205,7 +205,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_rep.set_defaults(func=report_command)
 
     # ui
-    p_ui = sub.add_parser("ui", help="Launch interactive Streamlit Web Dashboard")
+    p_ui = sub.add_parser("ui", help="Launch interactive CodeDrift Enterprise Web Dashboard")
+    p_ui.add_argument("--port", type=int, default=8080, help="Port to listen on (default: 8080)")
+    p_ui.add_argument("--host", default="127.0.0.1", help="Host interface (default: 127.0.0.1)")
     p_ui.set_defaults(func=ui_command)
 
     # predict
@@ -250,10 +252,23 @@ def report_command(args: argparse.Namespace) -> int:
 
 
 def ui_command(args: argparse.Namespace) -> int:
-    import subprocess
-    dashboard_path = Path(__file__).parent / "dashboard.py"
-    console.print("[bold green]Starting CodeDrift Interactive Web Dashboard on Streamlit...[/bold green]")
-    return subprocess.call([sys.executable, "-m", "streamlit", "run", str(dashboard_path)])
+    import webbrowser
+    from .web.server import start_web_server
+
+    port = getattr(args, "port", 8080)
+    host = getattr(args, "host", "127.0.0.1")
+
+    console.print(f"[bold green]Starting CodeDrift Enterprise Web Platform at http://{host}:{port}[/bold green]")
+    console.print("[dim]Serving interactive dashboard and REST analysis gateway...[/dim]")
+    
+    server = start_web_server(host=host, port=port)
+    try:
+        webbrowser.open(f"http://{host}:{port}")
+        server.serve_forever()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Shutting down CodeDrift Web Platform...[/yellow]")
+        server.server_close()
+    return 0
 
 
 def predict_command(args: argparse.Namespace) -> int:
