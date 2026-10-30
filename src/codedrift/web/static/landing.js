@@ -21,16 +21,17 @@ window.CodeDriftLanding = (function() {
           Autonomous API Breaking-Change & Dependency Degradation Guard
         </h1>
         <p class="hero-desc">
-          Upstream dependency updates silently break downstream systems even when versions comply with SemVer.
-          CodeDrift performs deep AST contract diffing, static call-graph reachability analysis, and generates
-          autonomous codemod patches before broken dependencies reach production.
+          When software packages update, they often remove parameters, delete functions, or change return types.
+          Standard package tools cannot catch this, causing production apps to crash.
+          CodeDrift automatically checks your code against the new package, tells you exactly what will break,
+          and generates one-click fixes.
         </p>
         <div class="hero-actions">
           <button class="btn-primary" id="landing-cta-dashboard">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
-            Launch Live Analysis Dashboard
+            Open Interactive Dashboard
           </button>
           <button class="btn-secondary" id="landing-cta-spec">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -38,7 +39,7 @@ window.CodeDriftLanding = (function() {
               <line x1="12" y1="16" x2="12" y2="12"/>
               <line x1="12" y1="8" x2="12.01" y2="8"/>
             </svg>
-            Read Technical Specification
+            How Does It Work?
           </button>
         </div>
       </section>
@@ -187,100 +188,95 @@ window.CodeDriftLanding = (function() {
 
     el.innerHTML = `
       <section class="spec-section">
-        <h2 class="spec-heading">Technical Specification & Algorithmic Rigor</h2>
+        <h2 class="spec-heading">Simple Guide: Why Do Library Updates Crash Code?</h2>
         <p class="spec-subheading">
-          Formal definitions, mathematical formulations, and engineering principles governing CodeDrift.
+          Whenever you run <code>pip install --upgrade package</code>, here are the exact 4 ways things can break, why they cause errors, and how CodeDrift solves each one:
         </p>
 
-        <div class="pane-card" style="margin-bottom: 24px;">
+        <!-- Card 1: Parameter Removed -->
+        <div class="pane-card" style="margin-bottom: 20px;">
           <div class="pane-header">
-            <span>Mathematical Blast Radius Formulation</span>
-            <span class="badge badge-neutral">Formula Spec</span>
+            <span style="font-size: 13px; font-weight: 700; color: var(--status-critical);">1. Parameter Removed (e.g., Scenario 1)</span>
+            <span class="badge badge-critical">TypeError</span>
           </div>
           <div style="padding: 20px;">
-            <p style="color: var(--text-secondary); margin-bottom: 12px;">
-              The Normalized Blast Radius Score is computed over the set of all reachable downstream call-sites <code>S</code>:
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">What happened?</p>
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+              The library authors decided that an argument (like <code>currency="USD"</code>) is no longer needed and deleted it from their function definition.
             </p>
-            <div class="terminal-box" style="font-size: 14px; margin-bottom: 14px;">
-R(d) = &Sigma; [ w_severity(s) &times; C(s) &times; D(s) ]
-
-Where:
-  w_severity(s) &in; { CRITICAL: 1.0, HIGH: 0.6, MEDIUM: 0.3, LOW: 0.1 }
-  C(s)          = Call-site reachability depth multiplier (Direct = 1.0, Indirect = 0.5)
-  D(s)          = File critical path weight (Production worker = 1.0, Test fixture = 0.2)
-            </div>
-            <p style="color: var(--text-muted); font-size: 13px;">
-              If any contract violation exceeds the maximum allowable threshold &theta; configured in <code>guard.yaml</code>,
-              the policy engine flags a non-zero exit code (CI failure).
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">Why does your app crash?</p>
+            <p style="color: #fca5a5; font-size: 13px; margin-bottom: 12px;">
+              Python throws a fatal <code>TypeError: got an unexpected keyword argument 'currency'</code> the moment a user clicks checkout.
+            </p>
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">How CodeDrift solves it:</p>
+            <p style="color: var(--status-safe); font-size: 13px;">
+              CodeDrift finds the exact file and line number in your codebase and creates a one-click <code>.patch</code> file that cleanly deletes the removed parameter from your function call.
             </p>
           </div>
         </div>
 
-        <div class="pane-card" style="margin-bottom: 24px;">
+        <!-- Card 2: Required Parameter Added -->
+        <div class="pane-card" style="margin-bottom: 20px;">
           <div class="pane-header">
-            <span>SemVer 2.0 Invariant Matrix</span>
-            <span class="badge badge-neutral">SemVer RFC Spec</span>
+            <span style="font-size: 13px; font-weight: 700; color: var(--status-critical);">2. Required Parameter Added (e.g., Scenario 2)</span>
+            <span class="badge badge-critical">Missing Argument</span>
           </div>
           <div style="padding: 20px;">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>API Mutation Type</th>
-                  <th>Permissible Release Type</th>
-                  <th>CodeDrift Enforcement</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Removal of Public Function / Method</td>
-                  <td>MAJOR Bump (x.0.0)</td>
-                  <td><span class="badge badge-critical">FLAGGED AS BREAKING</span></td>
-                </tr>
-                <tr>
-                  <td>Removal of Named Parameter</td>
-                  <td>MAJOR Bump (x.0.0)</td>
-                  <td><span class="badge badge-critical">FLAGGED AS BREAKING</span></td>
-                </tr>
-                <tr>
-                  <td>Adding Required Parameter Without Default</td>
-                  <td>MAJOR Bump (x.0.0)</td>
-                  <td><span class="badge badge-critical">FLAGGED AS BREAKING</span></td>
-                </tr>
-                <tr>
-                  <td>Return Type Modification</td>
-                  <td>MAJOR Bump (x.0.0)</td>
-                  <td><span class="badge badge-high">FLAGGED AS BREAKING</span></td>
-                </tr>
-                <tr>
-                  <td>Adding Optional Parameter with Default</td>
-                  <td>MINOR Bump (0.x.0)</td>
-                  <td><span class="badge badge-safe">BACKWARD COMPATIBLE</span></td>
-                </tr>
-                <tr>
-                  <td>Internal Implementation Bugfix</td>
-                  <td>PATCH Bump (0.0.x)</td>
-                  <td><span class="badge badge-safe">BACKWARD COMPATIBLE</span></td>
-                </tr>
-              </tbody>
-            </table>
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">What happened?</p>
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+              The new version of a library added a mandatory argument (like <code>mfa_code</code> or <code>idempotency_key</code>) without providing a default value.
+            </p>
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">Why does your app crash?</p>
+            <p style="color: #fca5a5; font-size: 13px; margin-bottom: 12px;">
+              Python throws <code>TypeError: missing 1 required positional argument: 'mfa_code'</code> because your existing code did not pass it.
+            </p>
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">How CodeDrift solves it:</p>
+            <p style="color: var(--status-safe); font-size: 13px;">
+              CodeDrift flags this as an immediate blocker, shows your team the exact missing parameter in the Remediation Checklist, and drafts the updated signature.
+            </p>
           </div>
         </div>
 
-        <div class="pane-card">
+        <!-- Card 3: Function Deleted -->
+        <div class="pane-card" style="margin-bottom: 20px;">
           <div class="pane-header">
-            <span>Autonomous Codemod Synthesis Engine</span>
-            <span class="badge badge-neutral">Remediation Spec</span>
+            <span style="font-size: 13px; font-weight: 700; color: var(--status-critical);">3. Whole Function Deleted (e.g., Scenario 3)</span>
+            <span class="badge badge-critical">AttributeError</span>
           </div>
           <div style="padding: 20px;">
-            <p style="color: var(--text-secondary); margin-bottom: 12px;">
-              When an upstream breaking change is identified and downstream call-sites are found,
-              CodeDrift generates AST-guided unified diffs using standard patch formats:
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">What happened?</p>
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+              The library authors renamed or completely deleted an old function (like <code>send_email()</code>) in favor of a new mechanism.
             </p>
-            <ul style="color: var(--text-secondary); padding-left: 20px; line-height: 1.8;">
-              <li><strong>Adapter Shim Generation:</strong> Preserves previous signatures by injecting default argument bindings.</li>
-              <li><strong>Caller Invocation Rewriting:</strong> Automates migration to new keyword arguments (e.g. adding idempotency keys or transaction tokens).</li>
-              <li><strong>Zero External Lock-in:</strong> Output is standard <code>git apply</code> compatible unified patches.</li>
-            </ul>
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">Why does your app crash?</p>
+            <p style="color: #fca5a5; font-size: 13px; margin-bottom: 12px;">
+              Python throws <code>AttributeError: module has no attribute 'send_email'</code> or an <code>ImportError</code> upon startup.
+            </p>
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">How CodeDrift solves it:</p>
+            <p style="color: var(--status-safe); font-size: 13px;">
+              CodeDrift detects the missing function, traces every file in your project that imported it, and points you to the new replacement in the Migration Manual.
+            </p>
+          </div>
+        </div>
+
+        <!-- Card 4: Return Type Changed -->
+        <div class="pane-card" style="margin-bottom: 20px;">
+          <div class="pane-header">
+            <span style="font-size: 13px; font-weight: 700; color: var(--status-high);">4. Return Type Changed (e.g., bool to Dict)</span>
+            <span class="badge badge-high">Silent Bug</span>
+          </div>
+          <div style="padding: 20px;">
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">What happened?</p>
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+              The function used to return a simple True/False boolean, but now returns a Dictionary with data: <code>{"status": "success"}</code>.
+            </p>
+            <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">Why does your app crash?</p>
+            <p style="color: #fca5a5; font-size: 13px; margin-bottom: 12px;">
+              Any `if is_success:` checks evaluate truthy even on errors, or code expecting a boolean fails when treating a dictionary like a primitive value.
+            </p>
+            <p style="color: var(--status-safe); font-size: 13px;">
+              CodeDrift flags the type change in the Diff Explorer so developers know to update their response handling logic before deploying.
+            </p>
           </div>
         </div>
       </section>

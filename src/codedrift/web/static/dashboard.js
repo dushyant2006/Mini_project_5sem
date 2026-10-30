@@ -16,9 +16,10 @@ window.CodeDriftDashboard = (function() {
           <div class="form-group" style="flex: 1; min-width: 320px;">
             <label class="form-label">Select Demonstration Scenario</label>
             <select class="form-select" id="scenario-select" style="width: 100%;">
-              <option value="payment_gateway_v2">Scenario 1: Payment Gateway v1 -&gt; v2 (Breaking: Checkout Crashes)</option>
-              <option value="auth_service_v2">Scenario 2: Auth Service v1 -&gt; v2 (Breaking: Login Page Fails)</option>
-              <option value="storage_lib_v1_1">Scenario 3: Cloud Storage v1.0 -&gt; v1.1 (Safe: Compatible Minor Update)</option>
+              <option value="payment_gateway_v2">Scenario 1: Payment Gateway (Parameter Removed: 'currency')</option>
+              <option value="auth_service_v2">Scenario 2: User Login (Required Parameter Added: 'mfa_code')</option>
+              <option value="notification_service_v2">Scenario 3: Email Alerts (Whole Function Deleted: 'send_email')</option>
+              <option value="storage_lib_v1_1">Scenario 4: Cloud Storage (Safe: Backward-Compatible Update)</option>
               <option value="custom">Custom File Paths...</option>
             </select>
           </div>

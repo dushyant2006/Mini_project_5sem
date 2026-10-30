@@ -63,9 +63,10 @@
     const descText = document.getElementById("scenario-desc-text");
 
     const scenarioDescriptions = {
-      payment_gateway_v2: "Scenario 1: The payment library removed 'currency' and changed return type. Client checkout crashes on line 12 while refunds is safe.",
-      auth_service_v2: "Scenario 2: The authentication library added a mandatory 'mfa_code' parameter. Client login portal crashes because it does not pass MFA.",
-      storage_lib_v1_1: "Scenario 3: Cloud storage added optional 'encryption' parameter with a safe default. Client app runs without any issue. Quality Gate passes!",
+      payment_gateway_v2: "Scenario 1: Parameter Removed. The payment library removed 'currency'. Our checkout code crashes because it still passes currency='USD'.",
+      auth_service_v2: "Scenario 2: Required Parameter Added. The authentication library now requires 'mfa_code'. Our login page crashes because it does not pass MFA.",
+      notification_service_v2: "Scenario 3: Function Deleted. The email library deleted send_email(). Our alerting module crashes with an AttributeError.",
+      storage_lib_v1_1: "Scenario 4: Safe Minor Update. Cloud storage added optional 'encryption' parameter with a safe default. Our code runs normally. Quality Gate passes!",
     };
 
     if (scenarioSelect) {
@@ -78,6 +79,10 @@
         } else if (val === "auth_service_v2") {
           if (inputOld) inputOld.value = "data/fixtures/v1/auth_service.py";
           if (inputNew) inputNew.value = "data/fixtures/v2/auth_service.py";
+          if (inputClient) inputClient.value = "data/fixtures/client_app";
+        } else if (val === "notification_service_v2") {
+          if (inputOld) inputOld.value = "data/fixtures/v1/notification_service.py";
+          if (inputNew) inputNew.value = "data/fixtures/v2/notification_service.py";
           if (inputClient) inputClient.value = "data/fixtures/client_app";
         } else if (val === "storage_lib_v1_1") {
           if (inputOld) inputOld.value = "data/fixtures/v1/storage_lib.py";
