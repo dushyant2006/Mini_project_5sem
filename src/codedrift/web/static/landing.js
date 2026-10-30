@@ -272,7 +272,7 @@ window.CodeDriftLanding = (function() {
             </p>
             <p style="color: var(--text-primary); font-weight: 600; margin-bottom: 6px;">Why does your app crash?</p>
             <p style="color: #fca5a5; font-size: 13px; margin-bottom: 12px;">
-              Any `if is_success:` checks evaluate truthy even on errors, or code expecting a boolean fails when treating a dictionary like a primitive value.
+              Any checks like <code>if is_success:</code> evaluate truthy even on errors, or code expecting a boolean fails when treating a dictionary like a primitive value.
             </p>
             <p style="color: var(--status-safe); font-size: 13px;">
               CodeDrift flags the type change in the Diff Explorer so developers know to update their response handling logic before deploying.
