@@ -7,21 +7,25 @@
 window.CodeDriftRemediationView = (function() {
 
   let currentPatches = [];
+  let currentActions = [];
 
-  function render(containerId, patches) {
+  function render(containerId, patches, actions) {
     const el = document.getElementById(containerId);
     if (!el) return;
 
     currentPatches = patches || [];
+    currentActions = actions || [];
 
-    if (!patches || patches.length === 0) {
+    const hasItems = (currentPatches.length > 0) || (currentActions.length > 0);
+
+    if (!hasItems) {
       el.innerHTML = `
         <div class="pane-card" style="padding: 40px; text-align: center;">
-          <div style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">
-            No Codemod Patches Required
+          <div style="font-size: 15px; font-weight: 700; color: var(--status-safe); margin-bottom: 6px;">
+            Zero Remediation Required
           </div>
-          <div style="font-size: 13px; color: var(--text-muted);">
-            No reachable breaking contracts were detected in the downstream codebase, or all breaking paths have identical adapter equivalents.
+          <div style="font-size: 13px; color: var(--text-muted); max-width: 500px; margin: 0 auto;">
+            This library upgrade is fully backward-compatible with your codebase. All existing functions and parameters continue to function normally.
           </div>
         </div>
       `;
@@ -29,14 +33,47 @@ window.CodeDriftRemediationView = (function() {
     }
 
     el.innerHTML = `
+      <!-- Plain English Remediation Action Checklist -->
+      <div class="pane-card" style="margin-bottom: 24px;">
+        <div class="pane-header">
+          <span>Required Developer Actions Checklist (${currentActions.length})</span>
+          <span class="badge badge-critical">Action Items</span>
+        </div>
+        <div style="padding: 20px;">
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            The following actions must be taken by the developer to update calling code to match the new library requirements:
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            ${currentActions.map((act, i) => `
+              <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-left: 4px solid ${act.priority === 'CRITICAL' ? 'var(--status-critical)' : 'var(--status-high)'}; border-radius: 4px; padding: 12px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 700; color: ${act.priority === 'CRITICAL' ? 'var(--status-critical)' : 'var(--status-high)'};">
+                    STEP ${i + 1} &bull; ${CodeDriftDashboard.escapeHtml(act.priority)}
+                  </span>
+                  <span style="font-size: 12px; color: var(--text-muted);">
+                    File: <strong style="color: var(--text-primary);">${CodeDriftDashboard.escapeHtml(act.file_name)}</strong> (Line ${act.line})
+                  </span>
+                </div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
+                  ${CodeDriftDashboard.escapeHtml(act.human_action)}
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted);">
+                  Target: <code>${CodeDriftDashboard.escapeHtml(act.target_symbol)}</code> &bull; Issue: <span class="badge badge-neutral">${CodeDriftDashboard.escapeHtml(act.issue_type)}</span>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      </div>
+
       <!-- Toolbar Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
         <div>
           <span style="font-weight: 700; color: var(--text-primary); font-size: 15px;">
-            Autonomous AST Codemod Patches
+            Automated Code Modifications (.patch files)
           </span>
           <span style="color: var(--text-muted); font-size: 13px; margin-left: 8px;">
-            ${patches.length} patch${patches.length === 1 ? "" : "es"} synthesized for downstream client repositories
+            ${currentPatches.length} patch${currentPatches.length === 1 ? "" : "es"} ready to apply with <code>git apply</code>
           </span>
         </div>
         <div style="display: flex; gap: 8px;">
@@ -53,7 +90,7 @@ window.CodeDriftRemediationView = (function() {
 
       <!-- Patch Cards Container -->
       <div id="patch-cards-list">
-        ${patches.map((patch, idx) => renderPatchCard(patch, idx)).join("")}
+        ${currentPatches.map((patch, idx) => renderPatchCard(patch, idx)).join("")}
       </div>
     `;
 

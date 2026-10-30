@@ -181,14 +181,112 @@
 
     // 4. Remediation View
     if (window.CodeDriftRemediationView) {
-      window.CodeDriftRemediationView.render("pane-remediation", data.patches);
+      window.CodeDriftRemediationView.render("pane-remediation", data.patches, data.remediation_actions);
     }
 
-    // 5. ML Degradation Predictor View
+    // 5. Database History View
+    renderDatabaseHistory(data.database_stats);
+
+    // 6. ML Degradation Predictor View
     renderMLPredictor(data.ml_prediction);
 
-    // 6. Migration Guide View
+    // 7. Migration Guide View
     renderMigrationGuide(data.migration_guide);
+  }
+
+  async function renderDatabaseHistory(stats) {
+    const pane = document.getElementById("pane-history");
+    if (!pane) return;
+
+    pane.innerHTML = `
+      <div class="pane-card" style="margin-bottom: 24px;">
+        <div class="pane-header">
+          <span>Embedded SQLite Audit Repository</span>
+          <span class="badge badge-safe">SQLite Active</span>
+        </div>
+        <div style="padding: 20px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <div style="background-color: var(--bg-surface-elevated); padding: 16px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+              <div class="metric-label">Total Audits Logged</div>
+              <div class="metric-number" style="color: var(--text-primary); font-size: 24px;" id="db-total-runs">${stats ? stats.total_runs : '-'}</div>
+              <div class="metric-sub">Stored in codedrift_audit.db</div>
+            </div>
+
+            <div style="background-color: var(--bg-surface-elevated); padding: 16px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+              <div class="metric-label">Blocked Upgrades</div>
+              <div class="metric-number" style="color: var(--status-critical); font-size: 24px;" id="db-blocked-runs">${stats ? stats.blocked_runs : '-'}</div>
+              <div class="metric-sub">Production crashes prevented</div>
+            </div>
+
+            <div style="background-color: var(--bg-surface-elevated); padding: 16px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+              <div class="metric-label">Passed Upgrades</div>
+              <div class="metric-number" style="color: var(--status-safe); font-size: 24px;" id="db-passed-runs">${stats ? stats.passed_runs : '-'}</div>
+              <div class="metric-sub">Safe dependency updates</div>
+            </div>
+
+            <div style="background-color: var(--bg-surface-elevated); padding: 16px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+              <div class="metric-label">Remediation Tasks</div>
+              <div class="metric-number" style="color: #38bdf8; font-size: 24px;" id="db-tasks-count">${stats ? stats.total_remediation_tasks : '-'}</div>
+              <div class="metric-sub">Auto-synthesized repair tasks</div>
+            </div>
+          </div>
+
+          <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">Recent Audit History Records</h3>
+          <div id="db-history-table-container">Loading audit logs...</div>
+        </div>
+      </div>
+    `;
+
+    try {
+      const res = await fetch("/api/history");
+      if (res.ok) {
+        const histData = await res.json();
+        const runs = histData.history || [];
+        const container = document.getElementById("db-history-table-container");
+        if (container) {
+          if (runs.length === 0) {
+            container.innerHTML = `<div style="color: var(--text-muted); font-size: 13px;">No runs recorded yet.</div>`;
+          } else {
+            container.innerHTML = `
+              <div class="comparison-table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Run ID</th>
+                      <th>Timestamp</th>
+                      <th>Scenario</th>
+                      <th>Gate Decision</th>
+                      <th>Blast Score</th>
+                      <th>Broken Lines</th>
+                      <th>Risk Tier</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${runs.map(r => `
+                      <tr>
+                        <td><code>#${r.id}</code></td>
+                        <td style="color: var(--text-muted); font-size: 12px;">${r.timestamp}</td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${CodeDriftDashboard.escapeHtml(r.scenario_name)}</td>
+                        <td>
+                          <span class="badge ${r.decision === 'PASSED' ? 'badge-safe' : 'badge-critical'}">
+                            ${r.decision}
+                          </span>
+                        </td>
+                        <td><strong>${r.blast_radius_score.toFixed(1)}</strong></td>
+                        <td>${r.reachable_sites}</td>
+                        <td><span class="badge badge-neutral">${CodeDriftDashboard.escapeHtml(r.risk_tier)}</span></td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load history:", e);
+    }
   }
 
   function renderMLPredictor(mlData) {

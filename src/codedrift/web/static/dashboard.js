@@ -114,13 +114,21 @@ window.CodeDriftDashboard = (function() {
             <polyline points="16 18 22 12 16 6"/>
             <polyline points="8 6 2 12 8 18"/>
           </svg>
-          3. One-Click Fixes (.patch)
+          3. Remediation Checklist & Patches
+        </button>
+        <button class="pane-tab-btn" data-tab="pane-history">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+          4. SQLite Audit Database
         </button>
         <button class="pane-tab-btn" data-tab="pane-ml">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
           </svg>
-          4. AI / ML Risk Prediction
+          5. AI Risk Prediction
         </button>
         <button class="pane-tab-btn" data-tab="pane-guide">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -130,7 +138,7 @@ window.CodeDriftDashboard = (function() {
             <line x1="16" y1="17" x2="8" y2="17"/>
             <polyline points="10 9 9 9 8 9"/>
           </svg>
-          5. Migration Steps
+          6. Migration Steps
         </button>
       </div>
 
@@ -143,6 +151,9 @@ window.CodeDriftDashboard = (function() {
       </div>
       <div id="pane-remediation" class="tab-pane">
         <!-- Rendered by remediation_view.js -->
+      </div>
+      <div id="pane-history" class="tab-pane">
+        <!-- Rendered by app.js / db view -->
       </div>
       <div id="pane-ml" class="tab-pane">
         <!-- Rendered by app.js / ml view -->

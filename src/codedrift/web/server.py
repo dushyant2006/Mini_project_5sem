@@ -17,8 +17,10 @@ from ..impact.blast_radius import BlastRadiusAnalyzer
 from ..guard.policy_engine import PolicyEngine
 from ..remediation.patch_generator import PatchGenerator
 from ..remediation.migration_guide import MigrationGuideSynthesizer
+from ..remediation.advisor import RemediationAdvisor
 from ..ml.predictor import DegradationPredictor
 from ..core.config import GuardPolicy
+from ..core.database import AuditDatabase
 
 
 WEB_ROOT = Path(__file__).parent
@@ -62,6 +64,11 @@ class CodeDriftWebHandler(SimpleHTTPRequestHandler):
             })
         elif self.path == "/api/scenarios":
             self._handle_scenarios()
+        elif self.path == "/api/history":
+            db = AuditDatabase()
+            history = db.get_recent_runs(limit=15)
+            stats = db.get_database_stats()
+            self._send_json(200, {"history": history, "stats": stats})
         else:
             # Static file fallback
             file_path = WEB_ROOT / self.path.lstrip("/")
@@ -167,7 +174,29 @@ class CodeDriftWebHandler(SimpleHTTPRequestHandler):
         guide_synth = MigrationGuideSynthesizer()
         guide = guide_synth.generate_markdown(report) if report else ""
 
+        advisor = RemediationAdvisor(patcher)
+        remediation_actions = advisor.generate_plan(report, patches)
+
+        # Persist audit record in SQLite database
+        scenario_name = req.get("scenario_name", Path(old_file).stem)
+        db = AuditDatabase()
+        run_id = db.record_run(
+            scenario_name=scenario_name,
+            old_file=str(old_file),
+            new_file=str(new_file),
+            client_dir=str(client_dir),
+            decision=gate_res.decision.value if hasattr(gate_res.decision, "value") else str(gate_res.decision),
+            blast_radius_score=report.blast_radius_score if report else 0.0,
+            diff_data=diff.to_dict(),
+            blast_data=report.to_dict() if report else None,
+            ml_data=ml_pred.to_dict(),
+            remediation_items=remediation_actions,
+        )
+
+        db_stats = db.get_database_stats()
+
         self._send_json(200, {
+            "run_id": run_id,
             "diff": diff.to_dict(),
             "blast_radius": report.to_dict() if report else None,
             "policy": gate_res.to_dict(),
@@ -175,6 +204,8 @@ class CodeDriftWebHandler(SimpleHTTPRequestHandler):
             "ml_prediction": ml_pred.to_dict(),
             "patches": [p.to_dict() for p in patches],
             "migration_guide": guide,
+            "remediation_actions": remediation_actions,
+            "database_stats": db_stats,
         })
 
     def log_message(self, format: str, *args) -> None:
