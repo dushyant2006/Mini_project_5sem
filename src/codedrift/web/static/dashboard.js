@@ -13,43 +13,51 @@ window.CodeDriftDashboard = (function() {
       <!-- Operational Control Toolbar -->
       <div class="dashboard-toolbar">
         <div class="toolbar-controls">
-          <div class="form-group">
-            <label class="form-label">Pre-configured Scenario</label>
-            <select class="form-select" id="scenario-select">
-              <option value="payment_gateway_v2">Payment Gateway v1 -> v2 (Breaking Parameter Churn)</option>
-              <option value="custom">Custom Files Ingestion</option>
+          <div class="form-group" style="flex: 1; min-width: 320px;">
+            <label class="form-label">Select Demonstration Scenario</label>
+            <select class="form-select" id="scenario-select" style="width: 100%;">
+              <option value="payment_gateway_v2">Scenario 1: Payment Gateway v1 -&gt; v2 (Breaking: Checkout Crashes)</option>
+              <option value="auth_service_v2">Scenario 2: Auth Service v1 -&gt; v2 (Breaking: Login Page Fails)</option>
+              <option value="storage_lib_v1_1">Scenario 3: Cloud Storage v1.0 -&gt; v1.1 (Safe: Compatible Minor Update)</option>
+              <option value="custom">Custom File Paths...</option>
             </select>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Old Module (v1)</label>
-            <input type="text" class="form-input" id="input-old-file" value="data/fixtures/v1/payment_gateway.py" style="min-width: 260px;" />
+            <label class="form-label">Old Library (v1)</label>
+            <input type="text" class="form-input" id="input-old-file" value="data/fixtures/v1/payment_gateway.py" style="min-width: 220px;" />
           </div>
 
           <div class="form-group">
-            <label class="form-label">New Module (v2)</label>
-            <input type="text" class="form-input" id="input-new-file" value="data/fixtures/v2/payment_gateway.py" style="min-width: 260px;" />
+            <label class="form-label">New Library (v2)</label>
+            <input type="text" class="form-input" id="input-new-file" value="data/fixtures/v2/payment_gateway.py" style="min-width: 220px;" />
           </div>
 
           <div class="form-group">
-            <label class="form-label">Client Codebase Root</label>
-            <input type="text" class="form-input" id="input-client-dir" value="data/fixtures/client_app" style="min-width: 220px;" />
+            <label class="form-label">Our App Folder</label>
+            <input type="text" class="form-input" id="input-client-dir" value="data/fixtures/client_app" style="min-width: 180px;" />
           </div>
 
           <div class="form-group">
-            <label class="form-label">Max Blast Threshold</label>
-            <input type="number" step="0.05" class="form-input" id="input-max-score" value="0.00" style="min-width: 100px; max-width: 100px;" />
+            <label class="form-label">Max Allowed Risk</label>
+            <input type="number" step="0.05" class="form-input" id="input-max-score" value="0.00" style="min-width: 90px; max-width: 90px;" />
           </div>
         </div>
 
         <div style="margin-top: 14px;">
-          <button class="btn-primary" id="btn-run-analysis">
+          <button class="btn-primary" id="btn-run-analysis" style="font-size: 13px; font-weight: 600;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <polygon points="5 3 19 12 5 21 5 3"/>
             </svg>
-            Execute AST Invariant Analysis
+            Run Compatibility Check
           </button>
         </div>
+      </div>
+
+      <!-- Quick Plain-English Explanation Banner -->
+      <div id="scenario-explanation-box" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px 18px; margin-bottom: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+        <strong style="color: var(--text-primary);">What is happening here?</strong>
+        <span id="scenario-desc-text">Comparing old payment library with new v2 release against our client application. Click Run Compatibility Check to see if your code will break.</span>
       </div>
 
       <!-- Quality Gate Status Banner -->
@@ -60,24 +68,24 @@ window.CodeDriftDashboard = (function() {
       <!-- 4 Core Metrics Ribbon -->
       <div class="metrics-ribbon" id="metrics-ribbon">
         <div class="metric-tile">
-          <div class="metric-label">API Mutations</div>
+          <div class="metric-label">Total Changes</div>
           <div class="metric-number" id="metric-total-diffs">-</div>
-          <div class="metric-sub">AST Signature Delta</div>
+          <div class="metric-sub">Differences found in library</div>
         </div>
         <div class="metric-tile">
-          <div class="metric-label">Breaking Contracts</div>
+          <div class="metric-label">Breaking Changes</div>
           <div class="metric-number" id="metric-breaking-diffs" style="color: var(--status-critical);">-</div>
-          <div class="metric-sub">SemVer Invariant Violations</div>
+          <div class="metric-sub">Incompatible syntax updates</div>
         </div>
         <div class="metric-tile">
-          <div class="metric-label">Reachable Call-Sites</div>
+          <div class="metric-label">Reachable Broken Lines</div>
           <div class="metric-number" id="metric-reachable-sites" style="color: var(--status-high);">-</div>
-          <div class="metric-sub">Impacted Client Invocations</div>
+          <div class="metric-sub">Our files actively calling bad code</div>
         </div>
         <div class="metric-tile">
-          <div class="metric-label">Blast Radius Score R(d)</div>
+          <div class="metric-label">Blast Radius Score</div>
           <div class="metric-number" id="metric-blast-score" style="color: var(--text-primary);">-</div>
-          <div class="metric-sub" id="metric-blast-sub">Impact Severity Metric</div>
+          <div class="metric-sub" id="metric-blast-sub">Scale of 0 (Safe) to 100 (Fatal)</div>
         </div>
       </div>
 
@@ -89,7 +97,7 @@ window.CodeDriftDashboard = (function() {
             <line x1="12" y1="20" x2="12" y2="4"/>
             <line x1="6" y1="20" x2="6" y2="14"/>
           </svg>
-          Contract Diffs
+          1. Library Differences
         </button>
         <button class="pane-tab-btn" data-tab="pane-reachability">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -99,20 +107,20 @@ window.CodeDriftDashboard = (function() {
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
           </svg>
-          Call-Graph Reachability
+          2. Impacted Lines in Our App
         </button>
         <button class="pane-tab-btn" data-tab="pane-remediation">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="16 18 22 12 16 6"/>
             <polyline points="8 6 2 12 8 18"/>
           </svg>
-          Codemod Patches
+          3. One-Click Fixes (.patch)
         </button>
         <button class="pane-tab-btn" data-tab="pane-ml">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
           </svg>
-          ML Degradation Predictor
+          4. AI / ML Risk Prediction
         </button>
         <button class="pane-tab-btn" data-tab="pane-guide">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -122,7 +130,7 @@ window.CodeDriftDashboard = (function() {
             <line x1="16" y1="17" x2="8" y2="17"/>
             <polyline points="10 9 9 9 8 9"/>
           </svg>
-          Migration Guide
+          5. Migration Steps
         </button>
       </div>
 

@@ -98,29 +98,30 @@ class CodeDriftWebHandler(SimpleHTTPRequestHandler):
             self._send_json(500, {"error": f"Failed to read file: {e}"})
 
     def _handle_scenarios(self) -> None:
-        project_root = WEB_ROOT.parent.parent.parent
-        v1_path = project_root / "data" / "fixtures" / "v1" / "payment_gateway.py"
-        v2_path = project_root / "data" / "fixtures" / "v2" / "payment_gateway.py"
-        checkout_path = project_root / "data" / "fixtures" / "client_app" / "checkout.py"
-        refunds_path = project_root / "data" / "fixtures" / "client_app" / "refunds.py"
-
         scenarios = [
             {
                 "id": "payment_gateway_v2",
-                "name": "Payment Gateway v1.0 -> v2.0 (Breaking Parameter Churn)",
-                "description": "Upstream removed currency parameter, changed return types to dict, and added mandatory idempotency key. Client checkout service breaks while refunds worker remains compatible.",
-                "old_code": v1_path.read_text(encoding="utf-8") if v1_path.exists() else "",
-                "new_code": v2_path.read_text(encoding="utf-8") if v2_path.exists() else "",
-                "client_files": [
-                    {
-                        "filename": "checkout.py",
-                        "code": checkout_path.read_text(encoding="utf-8") if checkout_path.exists() else "",
-                    },
-                    {
-                        "filename": "refunds.py",
-                        "code": refunds_path.read_text(encoding="utf-8") if refunds_path.exists() else "",
-                    }
-                ]
+                "name": "Scenario 1: Payment Gateway v1 -> v2 (Breaking: Checkout Crashes)",
+                "description": "Payment library removed the 'currency' parameter and changed return type. Client checkout breaks, while refunds remains safe.",
+                "old_file": "data/fixtures/v1/payment_gateway.py",
+                "new_file": "data/fixtures/v2/payment_gateway.py",
+                "client_dir": "data/fixtures/client_app",
+            },
+            {
+                "id": "auth_service_v2",
+                "name": "Scenario 2: Auth Service v1 -> v2 (Breaking: Login Page Fails)",
+                "description": "Auth library suddenly requires mandatory 'mfa_code' parameter. Client login portal crashes at runtime.",
+                "old_file": "data/fixtures/v1/auth_service.py",
+                "new_file": "data/fixtures/v2/auth_service.py",
+                "client_dir": "data/fixtures/client_app",
+            },
+            {
+                "id": "storage_lib_v1_1",
+                "name": "Scenario 3: Cloud Storage v1.0 -> v1.1 (Safe: Compatible Minor Update)",
+                "description": "Storage library added optional 'encryption' parameter with default. Client app continues running smoothly. CI gate passes!",
+                "old_file": "data/fixtures/v1/storage_lib.py",
+                "new_file": "data/fixtures/v2/storage_lib.py",
+                "client_dir": "data/fixtures/client_app",
             }
         ]
         self._send_json(200, {"scenarios": scenarios})

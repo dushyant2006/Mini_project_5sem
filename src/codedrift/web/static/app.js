@@ -60,6 +60,13 @@
     const inputNew = document.getElementById("input-new-file");
     const inputClient = document.getElementById("input-client-dir");
     const btnRun = document.getElementById("btn-run-analysis");
+    const descText = document.getElementById("scenario-desc-text");
+
+    const scenarioDescriptions = {
+      payment_gateway_v2: "Scenario 1: The payment library removed 'currency' and changed return type. Client checkout crashes on line 12 while refunds is safe.",
+      auth_service_v2: "Scenario 2: The authentication library added a mandatory 'mfa_code' parameter. Client login portal crashes because it does not pass MFA.",
+      storage_lib_v1_1: "Scenario 3: Cloud storage added optional 'encryption' parameter with a safe default. Client app runs without any issue. Quality Gate passes!",
+    };
 
     if (scenarioSelect) {
       scenarioSelect.addEventListener("change", () => {
@@ -68,7 +75,22 @@
           if (inputOld) inputOld.value = "data/fixtures/v1/payment_gateway.py";
           if (inputNew) inputNew.value = "data/fixtures/v2/payment_gateway.py";
           if (inputClient) inputClient.value = "data/fixtures/client_app";
+        } else if (val === "auth_service_v2") {
+          if (inputOld) inputOld.value = "data/fixtures/v1/auth_service.py";
+          if (inputNew) inputNew.value = "data/fixtures/v2/auth_service.py";
+          if (inputClient) inputClient.value = "data/fixtures/client_app";
+        } else if (val === "storage_lib_v1_1") {
+          if (inputOld) inputOld.value = "data/fixtures/v1/storage_lib.py";
+          if (inputNew) inputNew.value = "data/fixtures/v2/storage_lib.py";
+          if (inputClient) inputClient.value = "data/fixtures/client_app";
         }
+
+        if (descText && scenarioDescriptions[val]) {
+          descText.textContent = scenarioDescriptions[val];
+        }
+
+        // Auto-run on scenario change for instant presentation response
+        executeAnalysis();
       });
     }
 

@@ -1,33 +1,32 @@
 /* CodeDrift Enterprise Design System
-   Strict Constraints: Neutral/Slate palette, No purple, No emojis, No bento grids.
-   Aesthetic: HashiCorp / Snyk / Datadog / GitHub Enterprise clean engineering standard. */
+   Clean Modern Neutral / Slate Palette (No purple, No high-saturation neon) */
 
 :root {
-  --bg-canvas: #090d16;
-  --bg-surface: #0e1424;
-  --bg-surface-elevated: #131b2e;
-  --bg-surface-hover: #17223b;
-  --border-subtle: #1e293b;
-  --border-strong: #334155;
+  --bg-canvas: #0b0f17;
+  --bg-surface: #111827;
+  --bg-surface-elevated: #1a2234;
+  --bg-surface-hover: #222d42;
+  --border-subtle: #243046;
+  --border-strong: #374763;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --text-code: #e2e8f0;
 
-  --accent-blue: #2563eb;
-  --accent-blue-hover: #1d4ed8;
-  --accent-blue-subtle: rgba(37, 99, 235, 0.12);
+  --accent-blue: #0284c7;
+  --accent-blue-hover: #0369a1;
+  --accent-blue-subtle: rgba(2, 132, 199, 0.12);
 
-  --status-critical: #e11d48;
-  --status-critical-bg: rgba(225, 29, 72, 0.12);
-  --status-high: #ea580c;
-  --status-high-bg: rgba(234, 88, 12, 0.12);
-  --status-medium: #d97706;
-  --status-medium-bg: rgba(217, 119, 6, 0.12);
-  --status-safe: #059669;
-  --status-safe-bg: rgba(5, 150, 105, 0.12);
+  --status-critical: #ef4444;
+  --status-critical-bg: rgba(239, 68, 68, 0.12);
+  --status-high: #f97316;
+  --status-high-bg: rgba(249, 115, 22, 0.12);
+  --status-medium: #eab308;
+  --status-medium-bg: rgba(234, 179, 8, 0.12);
+  --status-safe: #10b981;
+  --status-safe-bg: rgba(16, 185, 129, 0.12);
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
 }
 
