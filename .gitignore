@@ -71,3 +71,12 @@ venv.bak/
 drift_report.json
 *.html
 !src/codedrift/web/index.html
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment secrets
+.env.*
+!.env.example
