@@ -19,6 +19,11 @@ OSV = (
     "codedrift.security.osv_client.fetch_vulnerabilities"
 )
 
+COMPARATOR = (
+    "codedrift.dependency.upgrade_analyzer."
+    "compare_package_versions"
+)
+
 
 SAMPLE_ADVISORY = {
     "id": "TEST-001",
@@ -344,3 +349,150 @@ def test_duplicate_cve_aliases(tmp_path):
     assert report["vulnerabilities_found"] == 2
     assert report["unique_advisory_count"] == 2
     assert report["unique_cve_count"] == 1
+
+
+def test_repository_api_analysis(tmp_path):
+
+    (tmp_path / "requirements.txt").write_text(
+        "requests==2.28.0\n",
+        encoding="utf-8",
+    )
+
+    comparison = {
+        "comparison_status": "completed",
+        "breaking_count": 2,
+        "total_changes": 3,
+        "non_breaking_count": 1,
+        "changes": [],
+    }
+
+    with patch(REGISTRY, return_value="2.32.0"), \
+         patch(OSV, return_value=[SAMPLE_ADVISORY]), \
+         patch(
+             COMPARATOR,
+             return_value=comparison,
+         ) as comparator:
+
+        report = analyze_local_repository(
+            tmp_path,
+            breaking_changes=True,
+        )
+
+    comparator.assert_called_once_with(
+        "requests",
+        "2.28.0",
+        "2.32.0",
+    )
+
+    assert report["updates_found"] == 1
+
+    assert report["vulnerable_dependencies"] == 1
+
+    assert (
+        report["api_analysis"]["unique_breaking_findings"]
+        == 2
+    )
+
+    assert (
+        report["dependencies"][0]["api_analysis_status"]
+        == "completed"
+    )
+
+
+def test_repository_api_analysis_disabled(tmp_path):
+
+    (tmp_path / "requirements.txt").write_text(
+        "requests==2.28.0\n",
+        encoding="utf-8",
+    )
+
+    with patch(REGISTRY, return_value="2.32.0"), \
+         patch(OSV, return_value=[]), \
+         patch(COMPARATOR) as comparator:
+
+        report = analyze_local_repository(tmp_path)
+
+    comparator.assert_not_called()
+
+    assert report["api_analysis"]["enabled"] is False
+
+    assert (
+        report["dependencies"][0]["api_analysis_status"]
+        == "disabled"
+    )
+
+
+def test_repository_api_analysis_offline(tmp_path):
+
+    (tmp_path / "requirements.txt").write_text(
+        "requests==2.28.0\n",
+        encoding="utf-8",
+    )
+
+    with patch(REGISTRY) as registry, \
+         patch(OSV) as osv, \
+         patch(COMPARATOR) as comparator:
+
+        report = analyze_local_repository(
+            tmp_path,
+            offline=True,
+            breaking_changes=True,
+        )
+
+    registry.assert_not_called()
+    osv.assert_not_called()
+    comparator.assert_not_called()
+
+    assert (
+        report["dependencies"][0]["api_analysis_status"]
+        == "offline"
+    )
+
+
+def test_github_api_analysis():
+
+    def fake_clone(url, destination):
+
+        destination.mkdir()
+
+        (destination / "requirements.txt").write_text(
+            "requests==2.28.0\n",
+            encoding="utf-8",
+        )
+
+        return destination
+
+    with patch(
+        "codedrift.repository.analyzer.clone_repository",
+        side_effect=fake_clone,
+    ), patch(
+        REGISTRY,
+        return_value="2.32.0",
+    ), patch(
+        OSV,
+        return_value=[],
+    ), patch(
+        COMPARATOR,
+        return_value={
+            "comparison_status": "completed",
+            "breaking_count": 1,
+            "changes": [],
+        },
+    ) as comparator:
+
+        report = analyze_github_repository(
+            "https://github.com/owner/demo",
+            breaking_changes=True,
+            max_comparisons=1,
+        )
+
+    comparator.assert_called_once()
+
+    assert report["repository"] == "demo"
+
+    assert report["api_analysis"]["max_comparisons"] == 1
+
+    assert (
+        report["api_analysis"]["unique_comparisons_completed"]
+        == 1
+    )

@@ -30,8 +30,23 @@ from codedrift.security.osv_client import (
     scan_dependency,
 )
 
+from codedrift.dependency.upgrade_analyzer import (
+    analyze_upgrades,
+    DEFAULT_MAX_COMPARISONS,
+)
 
-def analyze_local_repository(repository_path, offline=False):
+
+def analyze_local_repository(
+    repository_path,
+    offline=False,
+    breaking_changes=False,
+    max_comparisons=DEFAULT_MAX_COMPARISONS,
+):
+
+    if max_comparisons < 0:
+        raise ValueError(
+            "Comparison limit cannot be negative"
+        )
 
     root = Path(repository_path).resolve()
 
@@ -68,9 +83,11 @@ def analyze_local_repository(repository_path, offline=False):
         if baseline is not None:
 
             if dependency["ecosystem"] == "pypi":
+
                 lookup["constraint"] = f"=={baseline}"
 
             else:
+
                 lookup["constraint"] = baseline
 
         checked = check_dependency(lookup)
@@ -99,6 +116,15 @@ def analyze_local_repository(repository_path, offline=False):
             "error": checked["error"],
             **security_cache[cache_key],
         })
+
+    upgrade_report = analyze_upgrades(
+        results,
+        enabled=breaking_changes,
+        offline=offline,
+        max_comparisons=max_comparisons,
+    )
+
+    results = upgrade_report.pop("dependencies")
 
     unique_cve_ids = sorted({
         cve_id
@@ -176,13 +202,27 @@ def analyze_local_repository(repository_path, offline=False):
             for item in results
         ),
 
+        "api_analysis": upgrade_report,
+
         "dependencies": results,
+
         "warnings": extracted["warnings"],
+
         "offline": offline,
     }
 
 
-def analyze_github_repository(repository_url, offline=False):
+def analyze_github_repository(
+    repository_url,
+    offline=False,
+    breaking_changes=False,
+    max_comparisons=DEFAULT_MAX_COMPARISONS,
+):
+
+    if max_comparisons < 0:
+        raise ValueError(
+            "Comparison limit cannot be negative"
+        )
 
     safe_url = validate_github_url(repository_url)
 
@@ -203,6 +243,8 @@ def analyze_github_repository(repository_url, offline=False):
         report = analyze_local_repository(
             destination,
             offline=offline,
+            breaking_changes=breaking_changes,
+            max_comparisons=max_comparisons,
         )
 
         report["repository_url"] = safe_url
@@ -227,7 +269,26 @@ def main():
         help="Skip package registry and OSV requests",
     )
 
+    parser.add_argument(
+        "--breaking-changes",
+        action="store_true",
+        help="Analyze potential API breaking changes",
+    )
+
+    parser.add_argument(
+        "--max-comparisons",
+        type=int,
+        default=DEFAULT_MAX_COMPARISONS,
+        help="Maximum distinct package upgrades to compare",
+    )
+
     args = parser.parse_args()
+
+    if args.max_comparisons < 0:
+
+        parser.error(
+            "--max-comparisons cannot be negative"
+        )
 
     try:
 
@@ -236,6 +297,8 @@ def main():
             report = analyze_github_repository(
                 args.target,
                 offline=args.offline,
+                breaking_changes=args.breaking_changes,
+                max_comparisons=args.max_comparisons,
             )
 
         else:
@@ -243,6 +306,8 @@ def main():
             report = analyze_local_repository(
                 args.target,
                 offline=args.offline,
+                breaking_changes=args.breaking_changes,
+                max_comparisons=args.max_comparisons,
             )
 
         print(json.dumps(report, indent=2))
