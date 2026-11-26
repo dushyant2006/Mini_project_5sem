@@ -10,9 +10,11 @@ description = "Autonomous API Breaking-Change & Dependency Degradation Guard"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+
 authors = [
     { name = "CodeDrift Maintainers" }
 ]
+
 keywords = [
     "api",
     "breaking-changes",
@@ -24,6 +26,7 @@ keywords = [
     "call-graph",
     "blast-radius"
 ]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -34,15 +37,20 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
+
 dependencies = [
     "rich>=13.0.0",
     "packaging>=23.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.9.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "httpx>=0.27.0",
 ]
 
 [project.scripts]
