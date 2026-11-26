@@ -1,0 +1,82 @@
+
+name: CodeDrift Dependency Guard
+
+on:
+  pull_request:
+    paths:
+      - "**/requirements*.txt"
+      - "**/pyproject.toml"
+      - "**/Pipfile"
+      - "**/Pipfile.lock"
+      - "**/poetry.lock"
+      - "**/uv.lock"
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "**/pom.xml"
+      - "src/codedrift/**"
+      - "tests/**"
+      - "codedrift-policy.json"
+      - ".github/workflows/codedrift.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codedrift-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  dependency-guard:
+
+    name: CodeDrift Policy Check
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 20
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install CodeDrift
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Run automated tests
+        run: |
+          python -m pytest -q
+
+      - name: Run CodeDrift dependency guard
+        run: |
+          python -m codedrift.guard.ci_guard . \
+            --policy codedrift-policy.json \
+            --max-comparisons 5 \
+            --output-dir codedrift-reports
+
+      - name: Publish analysis summary
+        if: always()
+        run: |
+          if [ -f codedrift-reports/codedrift-report.md ]; then
+            cat codedrift-reports/codedrift-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload analysis reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codedrift-analysis-report
+          path: codedrift-reports/
+          retention-days: 14
+          if-no-files-found: ignore

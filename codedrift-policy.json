@@ -1,0 +1,8 @@
+﻿{
+    "block_known_vulnerabilities": true,
+    "block_direct_high_severity": true,
+    "maximum_impact_score": 75,
+    "warn_on_unresolved_versions": true,
+    "warn_on_incomplete_analysis": true,
+    "fail_on_warning": false
+}
