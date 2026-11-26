@@ -26,6 +26,10 @@ from codedrift.dependency.registry_client import (
     check_dependency,
 )
 
+from codedrift.security.osv_client import (
+    scan_dependency,
+)
+
 
 def analyze_local_repository(repository_path, offline=False):
 
@@ -36,16 +40,23 @@ def analyze_local_repository(repository_path, offline=False):
 
     results = []
 
+    security_cache = {}
+
     for dependency in extracted["dependencies"]:
 
         resolved = resolve_dependency(dependency, root)
 
         if offline:
+
             results.append({
                 **resolved,
                 "latest_release": None,
                 "comparison_status": "not_checked",
                 "error": None,
+                "security_status": "not_checked",
+                "vulnerability_count": None,
+                "vulnerabilities": [],
+                "security_error": None,
             })
 
             continue
@@ -64,12 +75,43 @@ def analyze_local_repository(repository_path, offline=False):
 
         checked = check_dependency(lookup)
 
+        cache_key = (
+            resolved["ecosystem"],
+            resolved["name"],
+            baseline,
+        )
+
+        if cache_key not in security_cache:
+
+            security = scan_dependency(resolved)
+
+            security_cache[cache_key] = {
+                "security_status": security["security_status"],
+                "vulnerability_count": security["vulnerability_count"],
+                "vulnerabilities": security["vulnerabilities"],
+                "security_error": security["security_error"],
+            }
+
         results.append({
             **resolved,
             "latest_release": checked["latest_release"],
             "comparison_status": checked["comparison_status"],
             "error": checked["error"],
+            **security_cache[cache_key],
         })
+
+    unique_cve_ids = sorted({
+        cve_id
+        for item in results
+        for vulnerability in item["vulnerabilities"]
+        for cve_id in vulnerability.get("cve_ids", [])
+    })
+
+    unique_advisory_ids = sorted({
+        vulnerability["id"]
+        for item in results
+        for vulnerability in item["vulnerabilities"]
+    })
 
     return {
         "repository": root.name,
@@ -91,6 +133,46 @@ def analyze_local_repository(repository_path, offline=False):
 
         "lookup_failures": sum(
             item["comparison_status"] == "lookup_failed"
+            for item in results
+        ),
+
+        "vulnerable_dependencies": sum(
+            item["security_status"] == "vulnerable"
+            for item in results
+        ),
+
+        "vulnerabilities_found": sum(
+            item["vulnerability_count"] or 0
+            for item in results
+        ),
+
+        "unique_advisory_count": len(unique_advisory_ids),
+
+        "unique_advisory_ids": unique_advisory_ids,
+
+        "unique_cve_count": len(unique_cve_ids),
+
+        "unique_cve_ids": unique_cve_ids,
+
+        "security_checked": sum(
+            item["security_status"] in {
+                "vulnerable",
+                "no_known_vulnerabilities",
+            }
+            for item in results
+        ),
+
+        "security_lookup_failures": sum(
+            item["security_status"] == "lookup_failed"
+            for item in results
+        ),
+
+        "security_unchecked": sum(
+            item["security_status"] in {
+                "not_checked",
+                "unresolved_version",
+                "unsupported_ecosystem",
+            }
             for item in results
         ),
 
@@ -142,7 +224,7 @@ def main():
     parser.add_argument(
         "--offline",
         action="store_true",
-        help="Skip package registry requests",
+        help="Skip package registry and OSV requests",
     )
 
     args = parser.parse_args()
